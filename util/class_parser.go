@@ -2,25 +2,8 @@ package util
 
 import (
 	"encoding/binary"
+	"outro/base"
 	"outro/model"
-)
-
-const (
-	// https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.4
-	ConstantClass              uint8 = 7
-	ConstantFieldRef           uint8 = 9
-	ConstantMethodRef          uint8 = 10
-	ConstantInterfaceMethodRef uint8 = 11
-	ConstantString             uint8 = 8
-	ConstantInteger            uint8 = 3
-	ConstantFloat              uint8 = 4
-	ConstantLong               uint8 = 5
-	ConstantDouble             uint8 = 6
-	ConstantNameAndType        uint8 = 12
-	ConstantUtf8               uint8 = 1
-	ConstantMethodHandle       uint8 = 15
-	ConstantMethodType         uint8 = 16
-	ConstantInvokeDynamic      uint8 = 18
 )
 
 type ClassFileParser struct {
@@ -48,7 +31,7 @@ func (p *ClassFileParser) parseConstantPool(count uint16) []model.ConstantInfo {
 	for i := 1; i < int(count); i++ {
 		constantPool[i] = p.parseConstantInfo()
 		switch constantPool[i].Tag {
-		case ConstantLong, ConstantDouble:
+		case base.ConstantLong, base.ConstantDouble:
 			i++
 		}
 	}
@@ -118,33 +101,33 @@ func (p *ClassFileParser) parseInterfaces(count uint16) []uint16 {
 func (p *ClassFileParser) parseConstantInfo() model.ConstantInfo {
 	tag := p.reader.ReadUint8()
 	switch tag {
-	case ConstantClass:
+	case base.ConstantClass:
 		return p.parseConstantClassInfo()
-	case ConstantFieldRef:
+	case base.ConstantFieldRef:
 		return p.parseConstantFieldrefInfo()
-	case ConstantMethodRef:
+	case base.ConstantMethodRef:
 		return p.parseConstantMethodrefInfo()
-	case ConstantInterfaceMethodRef:
+	case base.ConstantInterfaceMethodRef:
 		return p.parseConstantInterfaceMethodrefInfo()
-	case ConstantString:
+	case base.ConstantString:
 		return p.parseConstantStringInfo()
-	case ConstantInteger:
+	case base.ConstantInteger:
 		return p.parseConstantIntegerInfo()
-	case ConstantFloat:
+	case base.ConstantFloat:
 		return p.parseConstantFloatInfo()
-	case ConstantLong:
+	case base.ConstantLong:
 		return p.parseConstantLongInfo()
-	case ConstantDouble:
+	case base.ConstantDouble:
 		return p.parseConstantDoubleInfo()
-	case ConstantNameAndType:
+	case base.ConstantNameAndType:
 		return p.parseConstantNameAndTypeInfo()
-	case ConstantUtf8:
+	case base.ConstantUtf8:
 		return p.parseConstantUtf8Info()
-	case ConstantMethodHandle:
+	case base.ConstantMethodHandle:
 		return p.parseConstantMethodHandleInfo()
-	case ConstantMethodType:
+	case base.ConstantMethodType:
 		return p.parseConstantMethodTypeInfo()
-	case ConstantInvokeDynamic:
+	case base.ConstantInvokeDynamic:
 		return p.parseConstantInvokeDynamicInfo()
 	default:
 		panic("java.lang.ClassFormatError: constant pool tag!")
@@ -155,7 +138,7 @@ func (p *ClassFileParser) parseConstantClassInfo() model.ConstantInfo {
 	readUint16 := p.reader.ReadUint16()
 	info := make([]uint8, 2)
 	binary.BigEndian.PutUint16(info, readUint16)
-	return model.ConstantInfo{Tag: ConstantClass, Info: info}
+	return model.ConstantInfo{Tag: base.ConstantClass, Info: info}
 }
 
 func (p *ClassFileParser) parseConstantFieldrefInfo() model.ConstantInfo {
@@ -163,7 +146,7 @@ func (p *ClassFileParser) parseConstantFieldrefInfo() model.ConstantInfo {
 	info := make([]uint8, 4)
 	binary.BigEndian.PutUint16(info, readUint16)
 	binary.BigEndian.PutUint16(info[2:], p.reader.ReadUint16())
-	return model.ConstantInfo{Tag: ConstantFieldRef, Info: info}
+	return model.ConstantInfo{Tag: base.ConstantFieldRef, Info: info}
 }
 
 func (p *ClassFileParser) parseConstantMethodrefInfo() model.ConstantInfo {
@@ -171,7 +154,7 @@ func (p *ClassFileParser) parseConstantMethodrefInfo() model.ConstantInfo {
 	info := make([]uint8, 4)
 	binary.BigEndian.PutUint16(info, readUint16)
 	binary.BigEndian.PutUint16(info[2:], p.reader.ReadUint16())
-	return model.ConstantInfo{Tag: ConstantMethodRef, Info: info}
+	return model.ConstantInfo{Tag: base.ConstantMethodRef, Info: info}
 }
 
 func (p *ClassFileParser) parseConstantInterfaceMethodrefInfo() model.ConstantInfo {
@@ -179,42 +162,42 @@ func (p *ClassFileParser) parseConstantInterfaceMethodrefInfo() model.ConstantIn
 	info := make([]uint8, 4)
 	binary.BigEndian.PutUint16(info, readUint16)
 	binary.BigEndian.PutUint16(info[2:], p.reader.ReadUint16())
-	return model.ConstantInfo{Tag: ConstantInterfaceMethodRef, Info: info}
+	return model.ConstantInfo{Tag: base.ConstantInterfaceMethodRef, Info: info}
 }
 
 func (p *ClassFileParser) parseConstantStringInfo() model.ConstantInfo {
 	readUint16 := p.reader.ReadUint16()
 	info := make([]uint8, 2)
 	binary.BigEndian.PutUint16(info, readUint16)
-	return model.ConstantInfo{Tag: ConstantString, Info: info}
+	return model.ConstantInfo{Tag: base.ConstantString, Info: info}
 }
 
 func (p *ClassFileParser) parseConstantIntegerInfo() model.ConstantInfo {
 	readUint32 := p.reader.ReadUint32()
 	info := make([]uint8, 4)
 	binary.BigEndian.PutUint32(info, readUint32)
-	return model.ConstantInfo{Tag: ConstantInteger, Info: info}
+	return model.ConstantInfo{Tag: base.ConstantInteger, Info: info}
 }
 
 func (p *ClassFileParser) parseConstantFloatInfo() model.ConstantInfo {
 	readUint32 := p.reader.ReadUint32()
 	info := make([]uint8, 4)
 	binary.BigEndian.PutUint32(info, readUint32)
-	return model.ConstantInfo{Tag: ConstantFloat, Info: info}
+	return model.ConstantInfo{Tag: base.ConstantFloat, Info: info}
 }
 
 func (p *ClassFileParser) parseConstantLongInfo() model.ConstantInfo {
 	readUint64 := p.reader.ReadUint64()
 	info := make([]uint8, 8)
 	binary.BigEndian.PutUint64(info, readUint64)
-	return model.ConstantInfo{Tag: ConstantLong, Info: info}
+	return model.ConstantInfo{Tag: base.ConstantLong, Info: info}
 }
 
 func (p *ClassFileParser) parseConstantDoubleInfo() model.ConstantInfo {
 	readUint64 := p.reader.ReadUint64()
 	info := make([]uint8, 8)
 	binary.BigEndian.PutUint64(info, readUint64)
-	return model.ConstantInfo{Tag: ConstantDouble, Info: info}
+	return model.ConstantInfo{Tag: base.ConstantDouble, Info: info}
 }
 
 func (p *ClassFileParser) parseConstantNameAndTypeInfo() model.ConstantInfo {
@@ -222,27 +205,27 @@ func (p *ClassFileParser) parseConstantNameAndTypeInfo() model.ConstantInfo {
 	info := make([]uint8, 4)
 	binary.BigEndian.PutUint16(info, readUint16)
 	binary.BigEndian.PutUint16(info[2:], p.reader.ReadUint16())
-	return model.ConstantInfo{Tag: ConstantNameAndType, Info: info}
+	return model.ConstantInfo{Tag: base.ConstantNameAndType, Info: info}
 }
 
 func (p *ClassFileParser) parseConstantUtf8Info() model.ConstantInfo {
 	length := p.reader.ReadUint16()
 	bytes := p.reader.ReadBytes(uint32(length))
-	return model.ConstantInfo{Tag: ConstantUtf8, Info: bytes}
+	return model.ConstantInfo{Tag: base.ConstantUtf8, Info: bytes}
 }
 
 func (p *ClassFileParser) parseConstantMethodHandleInfo() model.ConstantInfo {
 	info := make([]uint8, 3)
 	info[0] = p.reader.ReadUint8()
 	binary.BigEndian.PutUint16(info[1:], p.reader.ReadUint16())
-	return model.ConstantInfo{Tag: ConstantMethodHandle, Info: info}
+	return model.ConstantInfo{Tag: base.ConstantMethodHandle, Info: info}
 }
 
 func (p *ClassFileParser) parseConstantMethodTypeInfo() model.ConstantInfo {
 	readUint16 := p.reader.ReadUint16()
 	info := make([]uint8, 2)
 	binary.BigEndian.PutUint16(info, readUint16)
-	return model.ConstantInfo{Tag: ConstantMethodType, Info: info}
+	return model.ConstantInfo{Tag: base.ConstantMethodType, Info: info}
 }
 
 func (p *ClassFileParser) parseConstantInvokeDynamicInfo() model.ConstantInfo {
@@ -250,7 +233,7 @@ func (p *ClassFileParser) parseConstantInvokeDynamicInfo() model.ConstantInfo {
 	info := make([]uint8, 4)
 	binary.BigEndian.PutUint16(info, readUint16)
 	binary.BigEndian.PutUint16(info[2:], p.reader.ReadUint16())
-	return model.ConstantInfo{Tag: ConstantInvokeDynamic, Info: info}
+	return model.ConstantInfo{Tag: base.ConstantInvokeDynamic, Info: info}
 }
 
 func (p *ClassFileParser) parseFieldInfo() model.FieldInfo {
@@ -277,9 +260,9 @@ func (p *ClassFileParser) parseMethodInfo() model.MethodInfo {
 	nameIndex := p.reader.ReadUint16()
 	descriptorIndex := p.reader.ReadUint16()
 	attributesCount := p.reader.ReadUint16()
-	attributes := make([]model.AttributeInfo, attributesCount)
+	attributes := make([]model.CodeAttributeInfo, attributesCount)
 	for i := range attributes {
-		attributes[i] = p.parseAttributeInfo()
+		attributes[i] = p.parseCodeAttributeInfo()
 	}
 	return model.MethodInfo{AccessFlags: accessFlags, NameIndex: nameIndex, DescriptorIndex: descriptorIndex, AttributesCount: attributesCount, Attributes: attributes}
 }
@@ -304,6 +287,42 @@ func (p *ClassFileParser) Parse() *model.Class {
 	class.Attributes = p.parseAttributes(class.AttributesCount)
 	return &class
 
+}
+
+func (p *ClassFileParser) parseCodeAttributeInfo() model.CodeAttributeInfo {
+	attributeNameIndex := p.reader.ReadUint16()
+	attributeLength := p.reader.ReadUint32()
+	maxStack := p.reader.ReadUint16()
+	maxLocals := p.reader.ReadUint16()
+	codeLength := p.reader.ReadUint32()
+	code := p.reader.ReadBytes(codeLength)
+	exceptionTableLength := p.reader.ReadUint16()
+	exceptionTable := make([]model.ExceptionTable, exceptionTableLength)
+	for i := range exceptionTable {
+		exceptionTable[i] = p.parseExceptionTable()
+	}
+	attributesCount := p.reader.ReadUint16()
+	attributes := make([]model.AttributeInfo, attributesCount)
+	for i := range attributes {
+		attributes[i] = p.parseAttributeInfo()
+	}
+	return model.CodeAttributeInfo{
+		AttributeNameIndex:   attributeNameIndex,
+		AttributeLength:      attributeLength,
+		MaxStack:             maxStack,
+		MaxLocals:            maxLocals,
+		CodeLength:           codeLength,
+		Code:                 code,
+		ExceptionTableLength: exceptionTableLength,
+		ExceptionTable:       exceptionTable,
+		AttributesCount:      attributesCount,
+		Attributes:           attributes,
+	}
+
+}
+
+func (p *ClassFileParser) parseExceptionTable() model.ExceptionTable {
+	return model.ExceptionTable{StartPC: p.reader.ReadUint16(), EndPC: p.reader.ReadUint16(), HandlerPC: p.reader.ReadUint16(), CatchType: p.reader.ReadUint16()}
 }
 
 func NewClassFileParser(reader *ByteReader) *ClassFileParser {

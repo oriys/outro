@@ -9,7 +9,7 @@ import (
 )
 
 func TestClassParse(t *testing.T) {
-	file, err := os.Open("../java/Solution.class")
+	file, err := os.Open("../java/classes/HelloWorld.class")
 	defer file.Close()
 	if err != nil {
 		panic(err)
@@ -19,6 +19,7 @@ func TestClassParse(t *testing.T) {
 		panic(err)
 	}
 	class := util.NewClassFileParser(util.NewByteReader(bytes)).Parse()
+	class.Print()
 	cy.ShouldEqual(class.Magic, 0xCAFEBABE)
 	cy.ShouldEqual(class.MinorVersion, 0)
 	cy.ShouldEqual(class.MajorVersion, 52)

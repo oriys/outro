@@ -1,7 +1,10 @@
 package model
 
 import (
+	"encoding/binary"
 	"fmt"
+	"math"
+	"outro/base"
 )
 
 var ConstantTagNameMap = map[uint8]string{
@@ -141,13 +144,45 @@ func (c *Class) printAttributes() {
 }
 
 func (info *ConstantInfo) Print() {
-	fmt.Print("Tag: ", ConstantTagNameMap[info.Tag])
+	fmt.Println("Tag: ", ConstantTagNameMap[info.Tag])
 	switch info.Tag {
-	case 1:
-		fmt.Println(" ", string(info.Info))
-	case 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16, 18:
-		fmt.Println(" ", info.Info)
+	case base.ConstantClass:
+		fmt.Println(" Class Name Index: ", binary.BigEndian.Uint16(info.Info))
+	case base.ConstantFieldRef, base.ConstantMethodRef, base.ConstantInterfaceMethodRef:
+		fmt.Println(" Class Index: ", binary.BigEndian.Uint16(info.Info[:2]))
+		fmt.Println(" Name And Type Index: ", binary.BigEndian.Uint16(info.Info[2:]))
+	case base.ConstantString:
+		fmt.Println(" String Index: ", binary.BigEndian.Uint16(info.Info))
+	case base.ConstantInteger:
+		fmt.Println(" Integer: ", binary.BigEndian.Uint32(info.Info))
+	case base.ConstantFloat:
+		fmt.Println(" Float: ", math.Float32frombits(binary.BigEndian.Uint32(info.Info)))
+	case base.ConstantLong:
+		fmt.Println(" Long: ", binary.BigEndian.Uint64(info.Info))
+	case base.ConstantDouble:
+		fmt.Println(" Double: ", binary.BigEndian.Uint64(info.Info))
+	case base.ConstantNameAndType:
+		fmt.Println(" Name Index: ", binary.BigEndian.Uint16(info.Info[:2]))
+		fmt.Println(" Descriptor Index: ", binary.BigEndian.Uint16(info.Info[2:]))
+	case base.ConstantUtf8:
+		fmt.Println(" Bytes: ", string(info.Info))
+	case base.ConstantMethodHandle:
+		fmt.Println(" Reference Kind: ", info.Info[0])
+		fmt.Println(" Reference Index: ", binary.BigEndian.Uint16(info.Info[1:]))
+	case base.ConstantMethodType:
+		fmt.Println(" Descriptor Index: ", binary.BigEndian.Uint16(info.Info))
+	case base.ConstantInvokeDynamic:
+		fmt.Println(" Bootstrap Method Attr Index: ", binary.BigEndian.Uint16(info.Info[:2]))
+		fmt.Println(" Name And Type Index: ", binary.BigEndian.Uint16(info.Info[2:]))
 	}
+}
+
+func byteToFloat32(info []uint8) float32 {
+	return math.Float32frombits(binary.BigEndian.Uint32(info))
+}
+
+func byteToInt32(uint8s []uint8) int32 {
+	return int32(uint8s[0])<<24 | int32(uint8s[1])<<16 | int32(uint8s[2])<<8 | int32(uint8s[3])
 }
 
 func (info *FieldInfo) Print() {
