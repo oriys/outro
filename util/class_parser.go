@@ -245,14 +245,24 @@ func (p *ClassFileParser) parseFieldInfo() model.FieldInfo {
 	for i := range attributes {
 		attributes[i] = p.parseAttributeInfo()
 	}
-	return model.FieldInfo{AccessFlags: accessFlags, NameIndex: nameIndex, DescriptorIndex: descriptorIndex, AttributesCount: attributesCount, Attributes: attributes}
+	return model.FieldInfo{
+		AccessFlags:     accessFlags,
+		NameIndex:       nameIndex,
+		DescriptorIndex: descriptorIndex,
+		AttributesCount: attributesCount,
+		Attributes:      attributes,
+	}
 }
 
 func (p *ClassFileParser) parseAttributeInfo() model.AttributeInfo {
 	attributeNameIndex := p.reader.ReadUint16()
 	attributeLength := p.reader.ReadUint32()
 	attributeInfo := p.reader.ReadBytes(attributeLength)
-	return model.AttributeInfo{AttributeNameIndex: attributeNameIndex, AttributeLength: attributeLength, Info: attributeInfo}
+	return model.AttributeInfo{
+		AttributeNameIndex: attributeNameIndex,
+		AttributeLength:    attributeLength,
+		Info:               attributeInfo,
+	}
 }
 
 func (p *ClassFileParser) parseMethodInfo() model.MethodInfo {
@@ -260,11 +270,17 @@ func (p *ClassFileParser) parseMethodInfo() model.MethodInfo {
 	nameIndex := p.reader.ReadUint16()
 	descriptorIndex := p.reader.ReadUint16()
 	attributesCount := p.reader.ReadUint16()
-	attributes := make([]model.CodeAttributeInfo, attributesCount)
+	attributes := make([]model.AttributeInfo, attributesCount)
 	for i := range attributes {
-		attributes[i] = p.parseCodeAttributeInfo()
+		attributes[i] = p.parseAttributeInfo()
 	}
-	return model.MethodInfo{AccessFlags: accessFlags, NameIndex: nameIndex, DescriptorIndex: descriptorIndex, AttributesCount: attributesCount, Attributes: attributes}
+	return model.MethodInfo{
+		AccessFlags:     accessFlags,
+		NameIndex:       nameIndex,
+		DescriptorIndex: descriptorIndex,
+		AttributesCount: attributesCount,
+		Attributes:      attributes,
+	}
 }
 
 func (p *ClassFileParser) Parse() *model.Class {
@@ -322,7 +338,42 @@ func (p *ClassFileParser) parseCodeAttributeInfo() model.CodeAttributeInfo {
 }
 
 func (p *ClassFileParser) parseExceptionTable() model.ExceptionTable {
-	return model.ExceptionTable{StartPC: p.reader.ReadUint16(), EndPC: p.reader.ReadUint16(), HandlerPC: p.reader.ReadUint16(), CatchType: p.reader.ReadUint16()}
+	return model.ExceptionTable{
+		StartPC:   p.reader.ReadUint16(),
+		EndPC:     p.reader.ReadUint16(),
+		HandlerPC: p.reader.ReadUint16(),
+		CatchType: p.reader.ReadUint16(),
+	}
+}
+
+func (p *ClassFileParser) parseLocalVariableAttributeInfo() model.LocalVariableTableAttributeInfo {
+	attributeNameIndex := p.reader.ReadUint16()
+	attributeLength := p.reader.ReadUint32()
+	localVariableTableLength := p.reader.ReadUint16()
+	localVariableTable := make([]model.LocalVariableTable, localVariableTableLength)
+	for i := range localVariableTable {
+		localVariableTable[i] = p.parseLocalVariableTable()
+	}
+	return model.LocalVariableTableAttributeInfo{
+		AttributeNameIndex: attributeNameIndex,
+		AttributeLength:    attributeLength,
+		LocalVariableTable: localVariableTable,
+	}
+}
+
+func (p *ClassFileParser) parseLocalVariableTable() model.LocalVariableTable {
+	startPC := p.reader.ReadUint16()
+	length := p.reader.ReadUint16()
+	nameIndex := p.reader.ReadUint16()
+	descriptorIndex := p.reader.ReadUint16()
+	index := p.reader.ReadUint16()
+	return model.LocalVariableTable{
+		StartPC:         startPC,
+		Length:          length,
+		NameIndex:       nameIndex,
+		DescriptorIndex: descriptorIndex,
+		Index:           index,
+	}
 }
 
 func NewClassFileParser(reader *ByteReader) *ClassFileParser {

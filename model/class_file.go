@@ -25,7 +25,7 @@ type MethodInfo struct {
 	NameIndex       uint16
 	DescriptorIndex uint16
 	AttributesCount uint16
-	Attributes      []CodeAttributeInfo
+	Attributes      []AttributeInfo
 }
 
 type Class struct {
@@ -66,15 +66,16 @@ type CodeAttributeInfo struct {
 	Attributes           []AttributeInfo
 }
 
-func (a *CodeAttributeInfo) Print() {
-	println("Method MaxStack:", a.MaxStack)
-	println("Method MaxLocals:", a.MaxLocals)
-	println("Method CodeLength:", a.CodeLength)
-	for _, b := range a.Code {
-		println("Method Code ", InstructDisplayNameMap[Instruct(b)])
-	}
-	println("Method ExceptionTableLength:", a.ExceptionTableLength)
-	println("Method ExceptionTable:", a.ExceptionTable)
-	println("Method AttributesCount:", a.AttributesCount)
-	println("Method Attributes:", a.Attributes)
+type LocalVariableTableAttributeInfo struct {
+	AttributeNameIndex uint16
+	AttributeLength    uint32
+	LocalVariableTable []LocalVariableTable
+}
+
+type LocalVariableTable struct {
+	StartPC         uint16
+	Length          uint16
+	NameIndex       uint16
+	DescriptorIndex uint16
+	Index           uint16
 }

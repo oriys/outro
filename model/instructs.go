@@ -1,5 +1,7 @@
 package model
 
+import "outro/rtda"
+
 type Instruct uint8
 
 const (
@@ -417,4 +419,24 @@ var InstructDisplayNameMap = map[Instruct]string{
 	0xca: "breakpoint",
 	0xfe: "impdep1",
 	0xff: "impdep2",
+}
+
+var InstructFuncMap = map[Instruct]func(frame *rtda.Frame) (int, error){
+	NOP: func(frame *rtda.Frame) (int, error) {
+		return 1, nil
+	},
+	ACONST_NULL: func(frame *rtda.Frame) (int, error) {
+		frame.OperandStack.PushRef(nil)
+		return 1, nil
+	},
+	ALOAD_0: func(frame *rtda.Frame) (int, error) {
+		frame.OperandStack.PushRef(frame.LocalVariables[0])
+		return 1, nil
+	},
+	INVOKESPECIAL: func(frame *rtda.Frame) (int, error) {
+		panic("todo")
+	},
+	RETURN: func(frame *rtda.Frame) (int, error) {
+		return 0, nil
+	},
 }
