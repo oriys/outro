@@ -1,4 +1,4 @@
-package model
+package interpret
 
 import "outro/rtda"
 

@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 	"outro/model"
-	"outro/util"
+	"outro/parser"
 	"testing"
 )
 
@@ -19,7 +19,7 @@ func TestMethodInvoke(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	class := util.NewClassFileParser(util.NewByteReader(bytes)).Parse()
+	class := parser.NewClassFileParser(parser.NewByteReader(bytes)).Parse()
 	assertClassParse(t, class)
 }
 

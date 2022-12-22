@@ -3,9 +3,9 @@ package main
 import (
 	"io"
 	"os"
-	"outro/model"
+	"outro/java/interpret"
+	"outro/parser"
 	"outro/rtda"
-	"outro/util"
 )
 
 func main() {
@@ -20,14 +20,14 @@ func main() {
 	defer file.Close()
 	checkErr(err)
 	bytes, err := io.ReadAll(file)
-	reader := util.NewByteReader(bytes)
-	parser := util.NewClassFileParser(reader)
+	reader := parser.NewByteReader(bytes)
+	parser := parser.NewClassFileParser(reader)
 	class := parser.Parse()
 	mainMethod, err := class.FindMain()
 	checkErr(err)
 	frame := rtda.NewFrame(mainMethod.Attributes[0].MaxLocals, mainMethod.Attributes[0].MaxStack, class)
 	thread := rtda.NewThread(frame, class)
-	model.NewJVM(thread).Execute()
+	interpret.NewJVM(thread).Execute()
 }
 
 func checkErr(err error) {

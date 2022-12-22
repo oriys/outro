@@ -4,7 +4,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"io"
 	"os"
-	"outro/util"
+	"outro/parser"
 	"testing"
 )
 
@@ -18,7 +18,7 @@ func TestClassParse(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	class := util.NewClassFileParser(util.NewByteReader(bytes)).Parse()
+	class := parser.NewClassFileParser(parser.NewByteReader(bytes)).Parse()
 	Convey("Test Class Parse", t, func() {
 		So(class.Magic, ShouldEqual, 0xCAFEBABE)
 		So(class.MinorVersion, ShouldEqual, 0)
