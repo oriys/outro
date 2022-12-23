@@ -103,7 +103,7 @@ func (c *Class) GetField(name string, descriptor string) (*FieldInfo, error) {
 func (c *Class) GetCodeAttribute(method *MethodInfo) (*CodeAttributeInfo, error) {
 	for _, attr := range method.Attributes {
 		if c.readConstantPoolUtf8ValueByIndex(attr.AttributeNameIndex) == "Code" {
-			return attr.ConvertToCodeAttributeInfo()
+			return attr.ToCodeAttributeInfo()
 		}
 	}
 	return nil, nil
@@ -113,7 +113,7 @@ func (c *Class) readConstantPoolUtf8ValueByIndex(index uint16) string {
 	return string(c.ConstantPool[index-1].Info)
 }
 
-func (attr *AttributeInfo) ConvertToCodeAttributeInfo() (*CodeAttributeInfo, error) {
+func (attr *AttributeInfo) ToCodeAttributeInfo() (*CodeAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	maxStack := binary.BigEndian.Uint16(attr.Info[6:8])
@@ -164,7 +164,7 @@ func (attr *AttributeInfo) ConvertToCodeAttributeInfo() (*CodeAttributeInfo, err
 	}, nil
 }
 
-func (attr *AttributeInfo) ConvertToLocalVariableTableAttributeInfo() (*LocalVariableTableAttributeInfo, error) {
+func (attr *AttributeInfo) ToLocalVariableTableAttributeInfo() (*LocalVariableTableAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	localVariableTableLength := binary.BigEndian.Uint16(attr.Info[6:8])
@@ -208,7 +208,7 @@ type LineNumberTableAttributeInfo struct {
 	LineNumberTableCount uint16
 }
 
-func (attr *AttributeInfo) ConvertToLineNumberTableAttributeInfo() (*LineNumberTableAttributeInfo, error) {
+func (attr *AttributeInfo) ToLineNumberTableAttributeInfo() (*LineNumberTableAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	lineNumberTableLength := binary.BigEndian.Uint16(attr.Info[6:8])
@@ -237,7 +237,7 @@ type SourceFileAttributeInfo struct {
 	SourceFileIndex    uint16
 }
 
-func (attr *AttributeInfo) ConvertToSourceFileAttributeInfo() (*SourceFileAttributeInfo, error) {
+func (attr *AttributeInfo) ToSourceFileAttributeInfo() (*SourceFileAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	sourceFileIndex := binary.BigEndian.Uint16(attr.Info[6:8])
@@ -255,7 +255,7 @@ type ConstantValueAttributeInfo struct {
 	ConstantValueIndex uint16
 }
 
-func (attr *AttributeInfo) ConvertToConstantValueAttributeInfo() (*ConstantValueAttributeInfo, error) {
+func (attr *AttributeInfo) ToConstantValueAttributeInfo() (*ConstantValueAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	constantValueIndex := binary.BigEndian.Uint16(attr.Info[6:8])
@@ -273,7 +273,7 @@ type ExceptionsAttributeInfo struct {
 	ExceptionIndexTable []uint16
 }
 
-func (attr *AttributeInfo) ConvertToExceptionsAttributeInfo() (*ExceptionsAttributeInfo, error) {
+func (attr *AttributeInfo) ToExceptionsAttributeInfo() (*ExceptionsAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	numberOfExceptions := binary.BigEndian.Uint16(attr.Info[6:8])
@@ -305,7 +305,7 @@ type InnerClassInfo struct {
 	InnerClassAccessFlagsInfo uint16
 }
 
-func (attr *AttributeInfo) ConvertToInnerClassesAttributeInfo() (*InnerClassesAttributeInfo, error) {
+func (attr *AttributeInfo) ToInnerClassesAttributeInfo() (*InnerClassesAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	numberOfClasses := binary.BigEndian.Uint16(attr.Info[6:8])
@@ -342,7 +342,7 @@ type EnclosingMethodAttributeInfo struct {
 	MethodIndex        uint16
 }
 
-func (attr *AttributeInfo) ConvertToEnclosingMethodAttributeInfo() (*EnclosingMethodAttributeInfo, error) {
+func (attr *AttributeInfo) ToEnclosingMethodAttributeInfo() (*EnclosingMethodAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	classIndex := binary.BigEndian.Uint16(attr.Info[6:8])
@@ -360,7 +360,7 @@ type SyntheticAttributeInfo struct {
 	AttributeLength    uint32
 }
 
-func (attr *AttributeInfo) ConvertToSyntheticAttributeInfo() (*SyntheticAttributeInfo, error) {
+func (attr *AttributeInfo) ToSyntheticAttributeInfo() (*SyntheticAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	return &SyntheticAttributeInfo{
@@ -375,7 +375,7 @@ type SignatureAttributeInfo struct {
 	SignatureIndex     uint16
 }
 
-func (attr *AttributeInfo) ConvertToSignatureAttributeInfo() (*SignatureAttributeInfo, error) {
+func (attr *AttributeInfo) ToSignatureAttributeInfo() (*SignatureAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	signatureIndex := binary.BigEndian.Uint16(attr.Info[6:8])
@@ -392,7 +392,7 @@ type SourceDebugExtensionAttributeInfo struct {
 	DebugExtension     []byte
 }
 
-func (attr *AttributeInfo) ConvertToSourceDebugExtensionAttributeInfo() (*SourceDebugExtensionAttributeInfo, error) {
+func (attr *AttributeInfo) ToSourceDebugExtensionAttributeInfo() (*SourceDebugExtensionAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	debugExtension := attr.Info[6:]
@@ -417,7 +417,7 @@ type LocalVariableTypeTableAttributeInfo struct {
 	LocalVariableTable []LocalVariableTypeInfo
 }
 
-func (attr *AttributeInfo) ConvertToLocalVariableTypeTableAttributeInfo() (*LocalVariableTypeTableAttributeInfo, error) {
+func (attr *AttributeInfo) ToLocalVariableTypeTableAttributeInfo() (*LocalVariableTypeTableAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	localVariableTableLength := binary.BigEndian.Uint16(attr.Info[6:8])
@@ -454,7 +454,7 @@ type DeprecatedAttributeInfo struct {
 	AttributeLength    uint32
 }
 
-func (attr *AttributeInfo) ConvertToDeprecatedAttributeInfo() (*DeprecatedAttributeInfo, error) {
+func (attr *AttributeInfo) ToDeprecatedAttributeInfo() (*DeprecatedAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	return &DeprecatedAttributeInfo{
@@ -473,7 +473,7 @@ type RuntimeVisibleAnnotationsAttributeInfo struct {
 	Annotations        []AnnotationInfo
 }
 
-func (attr *AttributeInfo) ConvertToRuntimeVisibleAnnotationsAttributeInfo() (*RuntimeVisibleAnnotationsAttributeInfo, error) {
+func (attr *AttributeInfo) ToRuntimeVisibleAnnotationsAttributeInfo() (*RuntimeVisibleAnnotationsAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	annotationsLength := binary.BigEndian.Uint16(attr.Info[6:8])
@@ -499,7 +499,7 @@ type RuntimeInvisibleAnnotationsAttributeInfo struct {
 	Annotations        []AnnotationInfo
 }
 
-func (attr *AttributeInfo) ConvertToRuntimeInvisibleAnnotationsAttributeInfo() (*RuntimeInvisibleAnnotationsAttributeInfo, error) {
+func (attr *AttributeInfo) ToRuntimeInvisibleAnnotationsAttributeInfo() (*RuntimeInvisibleAnnotationsAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	annotationsLength := binary.BigEndian.Uint16(attr.Info[6:8])
@@ -529,7 +529,7 @@ type RuntimeVisibleParameterAnnotationsAttributeInfo struct {
 	ParameterAnnotations []ParameterAnnotationInfo
 }
 
-func (attr *AttributeInfo) ConvertToRuntimeVisibleParameterAnnotationsAttributeInfo() (*RuntimeVisibleParameterAnnotationsAttributeInfo, error) {
+func (attr *AttributeInfo) ToRuntimeVisibleParameterAnnotationsAttributeInfo() (*RuntimeVisibleParameterAnnotationsAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	parameterAnnotationsLength := attr.Info[6:7][0]
@@ -559,7 +559,7 @@ type RuntimeInvisibleParameterAnnotationsAttributeInfo struct {
 	ParameterAnnotations []ParameterAnnotationInfo
 }
 
-func (attr *AttributeInfo) ConvertToRuntimeInvisibleParameterAnnotationsAttributeInfo() (*RuntimeInvisibleParameterAnnotationsAttributeInfo, error) {
+func (attr *AttributeInfo) ToRuntimeInvisibleParameterAnnotationsAttributeInfo() (*RuntimeInvisibleParameterAnnotationsAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	parameterAnnotationsLength := attr.Info[6:7][0]
@@ -589,7 +589,7 @@ type AnnotationDefaultAttributeInfo struct {
 	Default            []byte
 }
 
-func (attr *AttributeInfo) ConvertToAnnotationDefaultAttributeInfo() (*AnnotationDefaultAttributeInfo, error) {
+func (attr *AttributeInfo) ToAnnotationDefaultAttributeInfo() (*AnnotationDefaultAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	defaultValue := attr.Info[6:]
@@ -611,7 +611,7 @@ type BootstrapMethodsAttributeInfo struct {
 	BootstrapMethods   []BootstrapMethodInfo
 }
 
-func (attr *AttributeInfo) ConvertToBootstrapMethodsAttributeInfo() (*BootstrapMethodsAttributeInfo, error) {
+func (attr *AttributeInfo) ToBootstrapMethodsAttributeInfo() (*BootstrapMethodsAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	bootstrapMethodsLength := binary.BigEndian.Uint16(attr.Info[6:8])
@@ -644,7 +644,7 @@ type MethodParametersAttributeInfo struct {
 	Parameters         []ParameterInfo
 }
 
-func (attr *AttributeInfo) ConvertToMethodParametersAttributeInfo() (*MethodParametersAttributeInfo, error) {
+func (attr *AttributeInfo) ToMethodParametersAttributeInfo() (*MethodParametersAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	parametersLength := attr.Info[6:7][0]
@@ -711,7 +711,7 @@ type ModuleAttributeInfo struct {
 	ModuleInfo         ModuleInfo
 }
 
-func (attr *AttributeInfo) ConvertToModuleAttributeInfo() (*ModuleAttributeInfo, error) {
+func (attr *AttributeInfo) ToModuleAttributeInfo() (*ModuleAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	moduleInfo := ModuleInfo{
@@ -733,7 +733,7 @@ type ModulePackagesAttributeInfo struct {
 	PackageIndex       []uint16
 }
 
-func (attr *AttributeInfo) ConvertToModulePackagesAttributeInfo() (*ModulePackagesAttributeInfo, error) {
+func (attr *AttributeInfo) ToModulePackagesAttributeInfo() (*ModulePackagesAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	packageCount := binary.BigEndian.Uint16(attr.Info[6:8])
@@ -758,7 +758,7 @@ type ModuleMainClassAttributeInfo struct {
 	MainClassIndex     uint16
 }
 
-func (attr *AttributeInfo) ConvertToModuleMainClassAttributeInfo() (*ModuleMainClassAttributeInfo, error) {
+func (attr *AttributeInfo) ToModuleMainClassAttributeInfo() (*ModuleMainClassAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	mainClassIndex := binary.BigEndian.Uint16(attr.Info[6:8])
@@ -775,7 +775,7 @@ type NestHostAttributeInfo struct {
 	ClassIndex         uint16
 }
 
-func (attr *AttributeInfo) ConvertToNestHostAttributeInfo() (*NestHostAttributeInfo, error) {
+func (attr *AttributeInfo) ToNestHostAttributeInfo() (*NestHostAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	classIndex := binary.BigEndian.Uint16(attr.Info[6:8])
@@ -793,7 +793,7 @@ type NestMembersAttributeInfo struct {
 	Classes            []uint16
 }
 
-func (attr *AttributeInfo) ConvertToNestMembersAttributeInfo() (*NestMembersAttributeInfo, error) {
+func (attr *AttributeInfo) ToNestMembersAttributeInfo() (*NestMembersAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	numberOfClasses := binary.BigEndian.Uint16(attr.Info[6:8])
@@ -819,7 +819,7 @@ type PermittedSubclassesAttributeInfo struct {
 	Classes            []uint16
 }
 
-func (attr *AttributeInfo) ConvertToPermittedSubclassesAttributeInfo() (*PermittedSubclassesAttributeInfo, error) {
+func (attr *AttributeInfo) ToPermittedSubclassesAttributeInfo() (*PermittedSubclassesAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	numberOfClasses := binary.BigEndian.Uint16(attr.Info[6:8])
@@ -851,7 +851,7 @@ type RecordAttributeInfo struct {
 	Components         []RecordComponentInfo
 }
 
-func (attr *AttributeInfo) ConvertToRecordAttributeInfo() (*RecordAttributeInfo, error) {
+func (attr *AttributeInfo) ToRecordAttributeInfo() (*RecordAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	numberOfComponents := binary.BigEndian.Uint16(attr.Info[6:8])
