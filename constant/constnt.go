@@ -1,4 +1,4 @@
-package _const
+package constant
 
 const (
 	// https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.4
