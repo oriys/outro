@@ -1,6 +1,10 @@
 package interpreter
 
-import "outro/rtda"
+import (
+	"errors"
+	"math"
+	"outro/rtda"
+)
 
 type Instruct uint8
 
@@ -421,22 +425,1331 @@ var InstructDisplayNameMap = map[Instruct]string{
 	0xff: "impdep2",
 }
 
-var InstructFuncMap = map[Instruct]func(frame *rtda.Frame) (int, error){
+var InstructFuncMap = map[Instruct]func(frame *rtda.Frame) (pc int, err error){
 	NOP: func(frame *rtda.Frame) (int, error) {
-		return 1, nil
+		return 1 + frame.Thread.PC, nil
 	},
 	ACONST_NULL: func(frame *rtda.Frame) (int, error) {
-		frame.OperandStack.PushRef(nil)
-		return 1, nil
+		frame.OperandStack.Push(nil)
+		return 1 + frame.Thread.PC, nil
+	},
+	ICONST_M1: func(frame *rtda.Frame) (int, error) {
+		frame.OperandStack.PushInt(-1)
+		return 1 + frame.Thread.PC, nil
+	},
+	ICONST_0: func(frame *rtda.Frame) (int, error) {
+		frame.OperandStack.PushInt(0)
+		return 1 + frame.Thread.PC, nil
+	},
+	ICONST_1: func(frame *rtda.Frame) (int, error) {
+		frame.OperandStack.PushInt(1)
+		return 1 + frame.Thread.PC, nil
+	},
+	ICONST_2: func(frame *rtda.Frame) (int, error) {
+		frame.OperandStack.PushInt(2)
+		return 1 + frame.Thread.PC, nil
+	},
+	ICONST_3: func(frame *rtda.Frame) (int, error) {
+		frame.OperandStack.PushInt(3)
+		return 1 + frame.Thread.PC, nil
+	},
+	ICONST_4: func(frame *rtda.Frame) (int, error) {
+		frame.OperandStack.PushInt(4)
+		return 1 + frame.Thread.PC, nil
+	},
+	ICONST_5: func(frame *rtda.Frame) (int, error) {
+		frame.OperandStack.PushInt(5)
+		return 1 + frame.Thread.PC, nil
+	},
+	LCONST_0: func(frame *rtda.Frame) (int, error) {
+		frame.OperandStack.PushLong(0)
+		return 1 + frame.Thread.PC, nil
+	},
+	LCONST_1: func(frame *rtda.Frame) (int, error) {
+		frame.OperandStack.PushLong(1)
+		return 1 + frame.Thread.PC, nil
+	},
+	FCONST_0: func(frame *rtda.Frame) (int, error) {
+		frame.OperandStack.PushFloat(0)
+		return 1 + frame.Thread.PC, nil
+	},
+	FCONST_1: func(frame *rtda.Frame) (int, error) {
+		frame.OperandStack.PushFloat(1)
+		return 1 + frame.Thread.PC, nil
+	},
+	FCONST_2: func(frame *rtda.Frame) (int, error) {
+		frame.OperandStack.PushFloat(2)
+		return 1 + frame.Thread.PC, nil
+	},
+	DCONST_0: func(frame *rtda.Frame) (int, error) {
+		frame.OperandStack.PushDouble(0)
+		return 1 + frame.Thread.PC, nil
+	},
+	DCONST_1: func(frame *rtda.Frame) (int, error) {
+		frame.OperandStack.PushDouble(1)
+		return 1 + frame.Thread.PC, nil
+	},
+	BIPUSH: func(frame *rtda.Frame) (int, error) {
+		i := int32(frame.NextByte())
+		frame.OperandStack.PushInt(i)
+		return 2 + frame.Thread.PC, nil
+	},
+	SIPUSH: func(frame *rtda.Frame) (int, error) {
+		i := int32(frame.NextShort())
+		frame.OperandStack.PushInt(i)
+		return 3 + frame.Thread.PC, nil
+	},
+	LDC: func(frame *rtda.Frame) (int, error) {
+		cp := frame.Method.Class.ConstantPool
+		index := uint(frame.NextByte())
+		c := cp.GetConstant(uint16(index))
+		switch c.(type) {
+		case int32:
+			frame.OperandStack.PushInt(c.(int32))
+		case float32:
+			frame.OperandStack.PushFloat(c.(float32))
+		case string:
+			frame.OperandStack.Push(rtda.NewJString(frame.Method.Class.Loader, c.(string)))
+		default:
+			panic("todo: ldc!")
+		}
+		return 2 + frame.Thread.PC, nil
+	},
+	LDC_W: func(frame *rtda.Frame) (int, error) {
+		cp := frame.Method.Class.ConstantPool
+		index := frame.NextShort()
+		c := cp.GetConstant(uint16(index))
+		switch c.(type) {
+		case int32:
+			frame.OperandStack.PushInt(c.(int32))
+		case float32:
+			frame.OperandStack.PushFloat(c.(float32))
+		case string:
+			frame.OperandStack.Push(rtda.NewJString(frame.Method.Class.Loader, c.(string)))
+		default:
+			panic("todo: ldc_w!")
+		}
+		return 3 + frame.Thread.PC, nil
+	},
+	LDC2_W: func(frame *rtda.Frame) (int, error) {
+		cp := frame.Method.Class.ConstantPool
+		index := frame.NextShort()
+		c := cp.GetConstant(uint16(index))
+		switch c.(type) {
+		case int64:
+			frame.OperandStack.PushLong(c.(int64))
+		case float64:
+			frame.OperandStack.PushDouble(c.(float64))
+		default:
+			panic("todo: ldc2_w!")
+		}
+		return 3 + frame.Thread.PC, nil
+	},
+	ILOAD: func(frame *rtda.Frame) (int, error) {
+		index := uint16(frame.NextByte())
+		val := frame.LocalVariableInt(index)
+		frame.OperandStack.PushInt(val)
+		return 2 + frame.Thread.PC, nil
+	},
+	LLOAD: func(frame *rtda.Frame) (int, error) {
+		index := uint16(frame.NextByte())
+		val := frame.LocalVariableLong(index)
+		frame.OperandStack.PushLong(val)
+		return 2 + frame.Thread.PC, nil
+	},
+	FLOAD: func(frame *rtda.Frame) (int, error) {
+		index := uint16(frame.NextByte())
+		val := frame.LocalVariableFloat(index)
+		frame.OperandStack.PushFloat(val)
+		return 2 + frame.Thread.PC, nil
+	},
+	DLOAD: func(frame *rtda.Frame) (int, error) {
+		index := uint16(frame.NextByte())
+		val := frame.LocalVariableDouble(index)
+		frame.OperandStack.PushDouble(val)
+		return 2 + frame.Thread.PC, nil
+	},
+	ALOAD: func(frame *rtda.Frame) (int, error) {
+		index := uint16(frame.NextByte())
+		val := frame.LocalVariableRef(index)
+		frame.OperandStack.Push(val)
+		return 2 + frame.Thread.PC, nil
+	},
+	ILOAD_0: func(frame *rtda.Frame) (int, error) {
+		val := frame.LocalVariableInt(0)
+		frame.OperandStack.PushInt(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	ILOAD_1: func(frame *rtda.Frame) (int, error) {
+		val := frame.LocalVariableInt(1)
+		frame.OperandStack.PushInt(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	ILOAD_2: func(frame *rtda.Frame) (int, error) {
+		val := frame.LocalVariableInt(2)
+		frame.OperandStack.PushInt(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	ILOAD_3: func(frame *rtda.Frame) (int, error) {
+		val := frame.LocalVariableInt(3)
+		frame.OperandStack.PushInt(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	LLOAD_0: func(frame *rtda.Frame) (int, error) {
+		val := frame.LocalVariableLong(0)
+		frame.OperandStack.PushLong(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	LLOAD_1: func(frame *rtda.Frame) (int, error) {
+		val := frame.LocalVariableLong(1)
+		frame.OperandStack.PushLong(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	LLOAD_2: func(frame *rtda.Frame) (int, error) {
+		val := frame.LocalVariableLong(2)
+		frame.OperandStack.PushLong(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	LLOAD_3: func(frame *rtda.Frame) (int, error) {
+		val := frame.LocalVariableLong(3)
+		frame.OperandStack.PushLong(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	FLOAD_0: func(frame *rtda.Frame) (int, error) {
+		val := frame.LocalVariableFloat(0)
+		frame.OperandStack.PushFloat(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	FLOAD_1: func(frame *rtda.Frame) (int, error) {
+		val := frame.LocalVariableFloat(1)
+		frame.OperandStack.PushFloat(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	FLOAD_2: func(frame *rtda.Frame) (int, error) {
+		val := frame.LocalVariableFloat(2)
+		frame.OperandStack.PushFloat(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	FLOAD_3: func(frame *rtda.Frame) (int, error) {
+		val := frame.LocalVariableFloat(3)
+		frame.OperandStack.PushFloat(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	DLOAD_0: func(frame *rtda.Frame) (int, error) {
+		val := frame.LocalVariableDouble(0)
+		frame.OperandStack.PushDouble(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	DLOAD_1: func(frame *rtda.Frame) (int, error) {
+		val := frame.LocalVariableDouble(1)
+		frame.OperandStack.PushDouble(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	DLOAD_2: func(frame *rtda.Frame) (int, error) {
+		val := frame.LocalVariableDouble(2)
+		frame.OperandStack.PushDouble(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	DLOAD_3: func(frame *rtda.Frame) (int, error) {
+		val := frame.LocalVariableDouble(3)
+		frame.OperandStack.PushDouble(val)
+		return 1 + frame.Thread.PC, nil
 	},
 	ALOAD_0: func(frame *rtda.Frame) (int, error) {
-		frame.OperandStack.PushRef(frame.LocalVariables[0])
-		return 1, nil
+		val := frame.LocalVariableRef(0)
+		frame.OperandStack.Push(val)
+		return 1 + frame.Thread.PC, nil
 	},
-	INVOKESPECIAL: func(frame *rtda.Frame) (int, error) {
-		panic("todo")
+	ALOAD_1: func(frame *rtda.Frame) (int, error) {
+		val := frame.LocalVariableRef(1)
+		frame.OperandStack.Push(val)
+		return 1 + frame.Thread.PC, nil
 	},
-	RETURN: func(frame *rtda.Frame) (int, error) {
+	ALOAD_2: func(frame *rtda.Frame) (int, error) {
+		val := frame.LocalVariableRef(2)
+		frame.OperandStack.Push(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	ALOAD_3: func(frame *rtda.Frame) (int, error) {
+		val := frame.LocalVariableRef(3)
+		frame.OperandStack.Push(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	IALOAD: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		index := stack.PopInt()
+		arr := stack.PopIntArr()
+		if arr == nil {
+			return 0, errors.New("java.lang.NullPointerException")
+		}
+		checkIndex(len(arr), index)
+		stack.PushInt(arr[index])
+		return 1 + frame.Thread.PC, nil
+	},
+	LALOAD: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		index := stack.PopInt()
+		arr := stack.PopLongArr()
+		if arr == nil {
+			return 0, errors.New("java.lang.NullPointerException")
+		}
+		checkIndex(len(arr), index)
+		stack.PushLong(arr[index])
+		return 1 + frame.Thread.PC, nil
+	},
+	FALOAD: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		index := stack.PopInt()
+		arr := stack.PopFloatArr()
+		if arr == nil {
+			return 0, errors.New("java.lang.NullPointerException")
+		}
+		checkIndex(len(arr), index)
+		stack.PushFloat(arr[index])
+		return 1 + frame.Thread.PC, nil
+	},
+	DALOAD: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		index := stack.PopInt()
+		arr := stack.PopDoubleArr()
+		if arr == nil {
+			return 0, errors.New("java.lang.NullPointerException")
+		}
+		checkIndex(len(arr), index)
+		stack.PushDouble(arr[index])
+		return 1 + frame.Thread.PC, nil
+	},
+	AALOAD: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		index := stack.PopInt()
+		arr := stack.PopRefArr()
+		if arr == nil {
+			return 0, errors.New("java.lang.NullPointerException")
+		}
+		checkIndex(len(arr), index)
+		stack.Push(arr[index])
+		return 1 + frame.Thread.PC, nil
+	},
+	BALOAD: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		index := stack.PopInt()
+		arr := stack.PopByteArr()
+		if arr == nil {
+			return 0, errors.New("java.lang.NullPointerException")
+		}
+		checkIndex(len(arr), index)
+		stack.PushInt(int32(arr[index]))
+		return 1 + frame.Thread.PC, nil
+	},
+	CALOAD: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		index := stack.PopInt()
+		arr := stack.PopCharArr()
+		if arr == nil {
+			return 0, errors.New("java.lang.NullPointerException")
+		}
+		checkIndex(len(arr), index)
+		stack.PushInt(int32(arr[index]))
+		return 1 + frame.Thread.PC, nil
+	},
+	SALOAD: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		index := stack.PopInt()
+		arr := stack.PopShortArr()
+		if arr == nil {
+			return 0, errors.New("java.lang.NullPointerException")
+		}
+		checkIndex(len(arr), index)
+		stack.PushInt(int32(arr[index]))
+		return 1 + frame.Thread.PC, nil
+	},
+	ISTORE: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopInt()
+		index := uint16(frame.NextByte())
+		frame.SetLocalVariableInt(index, val)
+		return 2 + frame.Thread.PC, nil
+	},
+	LSTORE: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopLong()
+		index := uint16(frame.NextByte())
+		frame.SetLocalVariableLong(index, val)
+		return 2 + frame.Thread.PC, nil
+	},
+	FSTORE: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopFloat()
+		index := uint16(frame.NextByte())
+		frame.SetLocalVariableFloat(index, val)
+		return 2 + frame.Thread.PC, nil
+	},
+	DSTORE: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopDouble()
+		index := uint16(frame.NextByte())
+		frame.SetLocalVariableDouble(index, val)
+		return 2 + frame.Thread.PC, nil
+	},
+	ASTORE: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.Pop()
+		index := uint16(frame.NextByte())
+		frame.SetLocalVariableRef(index, val)
+		return 2 + frame.Thread.PC, nil
+	},
+	ISTORE_0: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopInt()
+		frame.SetLocalVariableInt(0, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	ISTORE_1: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopInt()
+		frame.SetLocalVariableInt(1, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	ISTORE_2: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopInt()
+		frame.SetLocalVariableInt(2, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	ISTORE_3: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopInt()
+		frame.SetLocalVariableInt(3, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	LSTORE_0: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopLong()
+		frame.SetLocalVariableLong(0, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	LSTORE_1: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopLong()
+		frame.SetLocalVariableLong(1, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	LSTORE_2: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopLong()
+		frame.SetLocalVariableLong(2, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	LSTORE_3: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopLong()
+		frame.SetLocalVariableLong(3, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	FSTORE_0: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopFloat()
+		frame.SetLocalVariableFloat(0, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	FSTORE_1: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopFloat()
+		frame.SetLocalVariableFloat(1, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	FSTORE_2: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopFloat()
+		frame.SetLocalVariableFloat(2, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	FSTORE_3: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopFloat()
+		frame.SetLocalVariableFloat(3, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	DSTORE_0: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopDouble()
+		frame.SetLocalVariableDouble(0, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	DSTORE_1: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopDouble()
+		frame.SetLocalVariableDouble(1, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	DSTORE_2: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopDouble()
+		frame.SetLocalVariableDouble(2, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	DSTORE_3: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopDouble()
+		frame.SetLocalVariableDouble(3, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	ASTORE_0: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.Pop()
+		frame.SetLocalVariableRef(0, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	ASTORE_1: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.Pop()
+		frame.SetLocalVariableRef(1, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	ASTORE_2: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.Pop()
+		frame.SetLocalVariableRef(2, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	ASTORE_3: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.Pop()
+		frame.SetLocalVariableRef(3, val)
+		return 1 + frame.Thread.PC, nil
+	},
+	IASTORE: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopInt()
+		index := frame.OperandStack.PopInt()
+		ints := frame.OperandStack.PopIntArr()
+		if ints == nil {
+			return 0, errors.New("java.lang.NullPointerException")
+		}
+		if index < 0 || index >= int32(len(ints)) {
+			return 0, errors.New("ArrayIndexOutOfBoundsException")
+		}
+		ints[index] = val
+		return 1 + frame.Thread.PC, nil
+	},
+	LASTORE: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopLong()
+		index := frame.OperandStack.PopInt()
+		longs := frame.OperandStack.PopLongArr()
+		if longs == nil {
+			return 0, errors.New("java.lang.NullPointerException")
+		}
+		if index < 0 || index >= int32(len(longs)) {
+			return 0, errors.New("ArrayIndexOutOfBoundsException")
+		}
+		longs[index] = val
+		return 1 + frame.Thread.PC, nil
+	},
+	FASTORE: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopFloat()
+		index := frame.OperandStack.PopInt()
+		floats := frame.OperandStack.PopFloatArr()
+		if floats == nil {
+			return 0, errors.New("java.lang.NullPointerException")
+		}
+		if index < 0 || index >= int32(len(floats)) {
+			return 0, errors.New("ArrayIndexOutOfBoundsException")
+		}
+		floats[index] = val
+		return 1 + frame.Thread.PC, nil
+	},
+	DASTORE: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopDouble()
+		index := frame.OperandStack.PopInt()
+		doubles := frame.OperandStack.PopDoubleArr()
+		if doubles == nil {
+			return 0, errors.New("java.lang.NullPointerException")
+		}
+		if index < 0 || index >= int32(len(doubles)) {
+			return 0, errors.New("ArrayIndexOutOfBoundsException")
+		}
+		doubles[index] = val
+		return 1 + frame.Thread.PC, nil
+	},
+	AASTORE: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.Pop()
+		index := frame.OperandStack.PopInt()
+		refs := frame.OperandStack.PopRefArr()
+		if refs == nil {
+			return 0, errors.New("java.lang.NullPointerException")
+		}
+		if index < 0 || index >= int32(len(refs)) {
+			return 0, errors.New("ArrayIndexOutOfBoundsException")
+		}
+		refs[index] = val
+		return 1 + frame.Thread.PC, nil
+	},
+	BASTORE: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopInt()
+		index := frame.OperandStack.PopInt()
+		bytes := frame.OperandStack.PopByteArr()
+		if bytes == nil {
+			return 0, errors.New("java.lang.NullPointerException")
+		}
+		if index < 0 || index >= int32(len(bytes)) {
+			return 0, errors.New("ArrayIndexOutOfBoundsException")
+		}
+		bytes[index] = int8(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	CASTORE: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopInt()
+		index := frame.OperandStack.PopInt()
+		chars := frame.OperandStack.PopCharArr()
+		if chars == nil {
+			return 0, errors.New("java.lang.NullPointerException")
+		}
+		if index < 0 || index >= int32(len(chars)) {
+			return 0, errors.New("ArrayIndexOutOfBoundsException")
+		}
+		chars[index] = rune(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	SASTORE: func(frame *rtda.Frame) (int, error) {
+		val := frame.OperandStack.PopInt()
+		index := frame.OperandStack.PopInt()
+		shorts := frame.OperandStack.PopShortArr()
+		if shorts == nil {
+			return 0, errors.New("java.lang.NullPointerException")
+		}
+		if index < 0 || index >= int32(len(shorts)) {
+			return 0, errors.New("ArrayIndexOutOfBoundsException")
+		}
+		shorts[index] = int16(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	POP: func(frame *rtda.Frame) (int, error) {
+		frame.OperandStack.Pop()
+		return 1 + frame.Thread.PC, nil
+	},
+	POP2: func(frame *rtda.Frame) (int, error) {
+		frame.OperandStack.Pop()
+		frame.OperandStack.Pop()
+		return 1 + frame.Thread.PC, nil
+	},
+	DUP: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.Pop()
+		stack.Push(val)
+		stack.Push(val)
+		return 1 + frame.Thread.PC, nil
+	},
+	DUP_X1: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.Pop()
+		val2 := stack.Pop()
+		stack.Push(val1)
+		stack.Push(val2)
+		stack.Push(val1)
+		return 1 + frame.Thread.PC, nil
+	},
+	DUP_X2: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.Pop()
+		val2 := stack.Pop()
+		val3 := stack.Pop()
+		stack.Push(val1)
+		stack.Push(val3)
+		stack.Push(val2)
+		stack.Push(val1)
+		return 1 + frame.Thread.PC, nil
+	},
+	DUP2: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.Pop()
+		val2 := stack.Pop()
+		stack.Push(val2)
+		stack.Push(val1)
+		stack.Push(val2)
+		stack.Push(val1)
+		return 1 + frame.Thread.PC, nil
+	},
+	DUP2_X1: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.Pop()
+		val2 := stack.Pop()
+		val3 := stack.Pop()
+		stack.Push(val2)
+		stack.Push(val1)
+		stack.Push(val3)
+		stack.Push(val2)
+		stack.Push(val1)
+		return 1 + frame.Thread.PC, nil
+	},
+	DUP2_X2: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.Pop()
+		val2 := stack.Pop()
+		val3 := stack.Pop()
+		val4 := stack.Pop()
+		stack.Push(val2)
+		stack.Push(val1)
+		stack.Push(val4)
+		stack.Push(val3)
+		stack.Push(val2)
+		stack.Push(val1)
+		return 1 + frame.Thread.PC, nil
+	},
+	SWAP: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.Pop()
+		val2 := stack.Pop()
+		stack.Push(val1)
+		stack.Push(val2)
+		return 1 + frame.Thread.PC, nil
+	},
+	IADD: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopInt()
+		val2 := stack.PopInt()
+		stack.PushInt(val1 + val2)
+		return 1 + frame.Thread.PC, nil
+	},
+	LADD: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopLong()
+		val2 := stack.PopLong()
+		stack.PushLong(val1 + val2)
+		return 1 + frame.Thread.PC, nil
+	},
+	FADD: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopFloat()
+		val2 := stack.PopFloat()
+		stack.PushFloat(val1 + val2)
+		return 1 + frame.Thread.PC, nil
+	},
+	DADD: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopDouble()
+		val2 := stack.PopDouble()
+		stack.PushDouble(val1 + val2)
+		return 1 + frame.Thread.PC, nil
+	},
+	ISUB: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopInt()
+		val2 := stack.PopInt()
+		stack.PushInt(val2 - val1)
+		return 1 + frame.Thread.PC, nil
+	},
+	LSUB: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopLong()
+		val2 := stack.PopLong()
+		stack.PushLong(val2 - val1)
+		return 1 + frame.Thread.PC, nil
+	},
+	FSUB: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopFloat()
+		val2 := stack.PopFloat()
+		stack.PushFloat(val2 - val1)
+		return 1 + frame.Thread.PC, nil
+	},
+	DSUB: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopDouble()
+		val2 := stack.PopDouble()
+		stack.PushDouble(val2 - val1)
+		return 1 + frame.Thread.PC, nil
+	},
+	IMUL: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopInt()
+		val2 := stack.PopInt()
+		stack.PushInt(val1 * val2)
+		return 1 + frame.Thread.PC, nil
+	},
+	LMUL: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopLong()
+		val2 := stack.PopLong()
+		stack.PushLong(val1 * val2)
+		return 1 + frame.Thread.PC, nil
+	},
+	FMUL: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopFloat()
+		val2 := stack.PopFloat()
+		stack.PushFloat(val1 * val2)
+		return 1 + frame.Thread.PC, nil
+	},
+	DMUL: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopDouble()
+		val2 := stack.PopDouble()
+		stack.PushDouble(val1 * val2)
+		return 1 + frame.Thread.PC, nil
+	},
+	IDIV: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopInt()
+		val2 := stack.PopInt()
+		if val1 == 0 {
+			return 0, errors.New("java.lang.ArithmeticException: / by zero")
+		}
+		stack.PushInt(val2 / val1)
+		return 1 + frame.Thread.PC, nil
+	},
+	LDIV: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopLong()
+		val2 := stack.PopLong()
+		if val1 == 0 {
+			return 0, errors.New("java.lang.ArithmeticException: / by zero")
+		}
+		stack.PushLong(val2 / val1)
+		return 1 + frame.Thread.PC, nil
+	},
+	FDIV: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopFloat()
+		val2 := stack.PopFloat()
+		stack.PushFloat(val2 / val1)
+		return 1 + frame.Thread.PC, nil
+	},
+	DDIV: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopDouble()
+		val2 := stack.PopDouble()
+		stack.PushDouble(val2 / val1)
+		return 1 + frame.Thread.PC, nil
+	},
+	IREM: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopInt()
+		val2 := stack.PopInt()
+		if val1 == 0 {
+			return 0, errors.New("java.lang.ArithmeticException: / by zero")
+		}
+		stack.PushInt(val2 % val1)
+		return 1 + frame.Thread.PC, nil
+	},
+	LREM: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopLong()
+		val2 := stack.PopLong()
+		if val1 == 0 {
+			return 0, errors.New("java.lang.ArithmeticException: / by zero")
+		}
+		stack.PushLong(val2 % val1)
+		return 1 + frame.Thread.PC, nil
+	},
+	FREM: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopFloat()
+		val2 := stack.PopFloat()
+		stack.PushFloat(float32(math.Mod(float64(val2), float64(val1))))
+		return 1 + frame.Thread.PC, nil
+	},
+	DREM: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopDouble()
+		val2 := stack.PopDouble()
+		stack.PushDouble(math.Mod(val2, val1))
+		return 1 + frame.Thread.PC, nil
+	},
+	INEG: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopInt()
+		stack.PushInt(-val)
+		return 1 + frame.Thread.PC, nil
+	},
+	LNEG: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopLong()
+		stack.PushLong(-val)
+		return 1 + frame.Thread.PC, nil
+	},
+	FNEG: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopFloat()
+		stack.PushFloat(-val)
+		return 1 + frame.Thread.PC, nil
+	},
+	DNEG: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopDouble()
+		stack.PushDouble(-val)
+		return 1 + frame.Thread.PC, nil
+	},
+	ISHL: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		s := stack.PopInt()
+		val := stack.PopInt()
+		stack.PushInt(val << uint(s))
+		return 1 + frame.Thread.PC, nil
+	},
+	LSHL: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		s := stack.PopInt()
+		val := stack.PopLong()
+		stack.PushLong(val << uint(s))
+		return 1 + frame.Thread.PC, nil
+	},
+	ISHR: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		s := stack.PopInt()
+		val := stack.PopInt()
+		stack.PushInt(val >> uint(s))
+		return 1 + frame.Thread.PC, nil
+	},
+	LSHR: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		s := stack.PopInt()
+		val := stack.PopLong()
+		stack.PushLong(val >> uint(s))
+		return 1 + frame.Thread.PC, nil
+	},
+	IUSHR: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		s := stack.PopInt()
+		val := stack.PopInt()
+		stack.PushInt(int32(uint32(val) >> uint(s)))
+		return 1 + frame.Thread.PC, nil
+	},
+	LUSHR: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		s := stack.PopInt()
+		val := stack.PopLong()
+		stack.PushLong(int64(uint64(val) >> uint(s)))
+		return 1 + frame.Thread.PC, nil
+	},
+	IAND: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopInt()
+		val2 := stack.PopInt()
+		stack.PushInt(val1 & val2)
+		return 1 + frame.Thread.PC, nil
+	},
+	LAND: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopLong()
+		val2 := stack.PopLong()
+		stack.PushLong(val1 & val2)
+		return 1 + frame.Thread.PC, nil
+	},
+	IOR: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopInt()
+		val2 := stack.PopInt()
+		stack.PushInt(val1 | val2)
+		return 1 + frame.Thread.PC, nil
+	},
+	LOR: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopLong()
+		val2 := stack.PopLong()
+		stack.PushLong(val1 | val2)
+		return 1 + frame.Thread.PC, nil
+	},
+	IXOR: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopInt()
+		val2 := stack.PopInt()
+		stack.PushInt(val1 ^ val2)
+		return 1 + frame.Thread.PC, nil
+	},
+	LXOR: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val1 := stack.PopLong()
+		val2 := stack.PopLong()
+		stack.PushLong(val1 ^ val2)
+		return 1 + frame.Thread.PC, nil
+	},
+	I2L: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopInt()
+		stack.PushLong(int64(val))
+		return 1 + frame.Thread.PC, nil
+	},
+	I2F: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopInt()
+		stack.PushFloat(float32(val))
+		return 1 + frame.Thread.PC, nil
+	},
+	I2D: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopInt()
+		stack.PushDouble(float64(val))
+		return 1 + frame.Thread.PC, nil
+	},
+	L2I: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopLong()
+		stack.PushInt(int32(val))
+		return 1 + frame.Thread.PC, nil
+	},
+	L2F: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopLong()
+		stack.PushFloat(float32(val))
+		return 1 + frame.Thread.PC, nil
+	},
+	L2D: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopLong()
+		stack.PushDouble(float64(val))
+		return 1 + frame.Thread.PC, nil
+	},
+	F2I: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopFloat()
+		stack.PushInt(int32(val))
+		return 1 + frame.Thread.PC, nil
+	},
+	F2L: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopFloat()
+		stack.PushLong(int64(val))
+		return 1 + frame.Thread.PC, nil
+	},
+	F2D: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopFloat()
+		stack.PushDouble(float64(val))
+		return 1 + frame.Thread.PC, nil
+	},
+	D2I: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopDouble()
+		stack.PushInt(int32(val))
+		return 1 + frame.Thread.PC, nil
+	},
+	D2L: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopDouble()
+		stack.PushLong(int64(val))
+		return 1 + frame.Thread.PC, nil
+	},
+	D2F: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopDouble()
+		stack.PushFloat(float32(val))
+		return 1 + frame.Thread.PC, nil
+	},
+	I2B: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopInt()
+		stack.PushInt(int32(int8(val)))
+		return 1 + frame.Thread.PC, nil
+	},
+	I2C: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopInt()
+		stack.PushInt(int32(uint16(val)))
+		return 1 + frame.Thread.PC, nil
+	},
+	I2S: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopInt()
+		stack.PushInt(int32(int16(val)))
+		return 1 + frame.Thread.PC, nil
+	},
+	LCMP: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val2 := stack.PopLong()
+		val1 := stack.PopLong()
+		if val1 > val2 {
+			stack.PushInt(1)
+		} else if val1 == val2 {
+			stack.PushInt(0)
+		} else {
+			stack.PushInt(-1)
+		}
+		return 1 + frame.Thread.PC, nil
+	},
+	FCMPL: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val2 := stack.PopFloat()
+		val1 := stack.PopFloat()
+		if val1 > val2 {
+			stack.PushInt(1)
+		} else if val1 == val2 {
+			stack.PushInt(0)
+		} else if val1 < val2 || math.IsNaN(float64(val1)) || math.IsNaN(float64(val2)) {
+			stack.PushInt(-1)
+		}
+		return 1 + frame.Thread.PC, nil
+	},
+	FCMPG: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val2 := stack.PopFloat()
+		val1 := stack.PopFloat()
+		if val1 > val2 {
+			stack.PushInt(1)
+		} else if val1 == val2 {
+			stack.PushInt(0)
+		} else if val1 < val2 || math.IsNaN(float64(val1)) || math.IsNaN(float64(val2)) {
+			stack.PushInt(-1)
+		}
+		return 1 + frame.Thread.PC, nil
+	},
+	DCMPL: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val2 := stack.PopDouble()
+		val1 := stack.PopDouble()
+		if val1 > val2 {
+			stack.PushInt(1)
+		} else if val1 == val2 {
+			stack.PushInt(0)
+		} else if val1 < val2 || math.IsNaN(val1) || math.IsNaN(val2) {
+			stack.PushInt(-1)
+		}
+		return 1 + frame.Thread.PC, nil
+	},
+	DCMPG: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val2 := stack.PopDouble()
+		val1 := stack.PopDouble()
+		if val1 > val2 {
+			stack.PushInt(1)
+		} else if val1 == val2 {
+			stack.PushInt(0)
+		} else if val1 < val2 || math.IsNaN(val1) || math.IsNaN(val2) {
+			stack.PushInt(-1)
+		}
+		return 1 + frame.Thread.PC, nil
+	},
+	IFEQ: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopInt()
+		if val == 0 {
+			offset := int(frame.NextByte())
+			return frame.Thread.PC + int(offset), nil
+		}
+		return 1 + frame.Thread.PC, nil
+	},
+	IFNE: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopInt()
+		if val != 0 {
+			offset := int(frame.NextByte())
+			return frame.Thread.PC + int(offset), nil
+		}
+		return 1 + frame.Thread.PC, nil
+	},
+	IFLT: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopInt()
+		if val < 0 {
+			offset := int(frame.ReadOffset())
+			return frame.Thread.PC + int(offset), nil
+		}
+		return 1 + frame.Thread.PC, nil
+	},
+	IFGE: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopInt()
+		if val >= 0 {
+			offset := int(frame.ReadOffset())
+			return frame.Thread.PC + int(offset), nil
+		}
+		return 1 + frame.Thread.PC, nil
+	},
+	IFGT: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopInt()
+		if val > 0 {
+			offset := int(frame.ReadOffset())
+			return frame.Thread.PC + int(offset), nil
+		}
+		return 1 + frame.Thread.PC, nil
+	},
+	IFLE: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val := stack.PopInt()
+		if val <= 0 {
+			offset := int(frame.ReadOffset())
+			return frame.Thread.PC + int(offset), nil
+		}
+		return 1 + frame.Thread.PC, nil
+	},
+	IF_ICMPEQ: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val2 := stack.PopInt()
+		val1 := stack.PopInt()
+		if val1 == val2 {
+			offset := int(frame.ReadOffset())
+			return frame.Thread.PC + int(offset), nil
+		}
+		return 1 + frame.Thread.PC, nil
+	},
+	IF_ICMPNE: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val2 := stack.PopInt()
+		val1 := stack.PopInt()
+		if val1 != val2 {
+			offset := int(frame.ReadOffset())
+			return frame.Thread.PC + int(offset), nil
+		}
+		return 1 + frame.Thread.PC, nil
+	},
+	IF_ICMPLT: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val2 := stack.PopInt()
+		val1 := stack.PopInt()
+		if val1 < val2 {
+			offset := int(frame.ReadOffset())
+			return frame.Thread.PC + int(offset), nil
+		}
+		return 1 + frame.Thread.PC, nil
+	},
+	IF_ICMPGE: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val2 := stack.PopInt()
+		val1 := stack.PopInt()
+		if val1 >= val2 {
+			offset := int(frame.ReadOffset())
+			return frame.Thread.PC + int(offset), nil
+		}
+		return 1 + frame.Thread.PC, nil
+	},
+	IF_ICMPGT: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val2 := stack.PopInt()
+		val1 := stack.PopInt()
+		if val1 > val2 {
+			offset := int(frame.ReadOffset())
+			return frame.Thread.PC + int(offset), nil
+		}
+		return 1 + frame.Thread.PC, nil
+	},
+	IF_ICMPLE: func(frame *rtda.Frame) (int, error) {
+		stack := frame.OperandStack
+		val2 := stack.PopInt()
+		val1 := stack.PopInt()
+		if val1 <= val2 {
+			offset := int(frame.ReadOffset())
+			return frame.Thread.PC + int(offset), nil
+		}
+		return 1 + frame.Thread.PC, nil
+	},
+	IF_ACMPEQ: func(frame *rtda.Frame) (int, error) {
+		panic("todo: if_acmpeq")
+	},
+	IF_ACMPNE: func(frame *rtda.Frame) (int, error) {
+		panic("todo: if_acmpne")
+	},
+	GOTO: func(frame *rtda.Frame) (int, error) {
+		offset := int(frame.ReadOffset())
+		return frame.Thread.PC + int(offset), nil
+	},
+	JSR: func(frame *rtda.Frame) (int, error) {
+		panic("todo: jsr")
+	},
+	RET: func(frame *rtda.Frame) (int, error) {
+		panic("todo: ret")
+	},
+	TABLESWITCH: func(frame *rtda.Frame) (int, error) {
+		panic("todo: tableswitch")
+	},
+	LOOKUPSWITCH: func(frame *rtda.Frame) (int, error) {
+		panic("todo: lookupswitch")
+	},
+	IRETURN: func(frame *rtda.Frame) (int, error) {
+		thread := frame.Thread
+		currentFrame := thread.PopFrame()
+		invokerFrame := thread.TopFrame()
+		val := currentFrame.OperandStack.PopInt()
+		invokerFrame.OperandStack.PushInt(val)
 		return 0, nil
 	},
+	LRETURN: func(frame *rtda.Frame) (int, error) {
+		thread := frame.Thread
+		currentFrame := thread.PopFrame()
+		invokerFrame := thread.TopFrame()
+		val := currentFrame.OperandStack.PopLong()
+		invokerFrame.OperandStack.PushLong(val)
+		return 0, nil
+	},
+	FRETURN: func(frame *rtda.Frame) (int, error) {
+		thread := frame.Thread
+		currentFrame := thread.PopFrame()
+		invokerFrame := thread.TopFrame()
+		val := currentFrame.OperandStack.PopFloat()
+		invokerFrame.OperandStack.PushFloat(val)
+		return 0, nil
+	},
+	DRETURN: func(frame *rtda.Frame) (int, error) {
+		thread := frame.Thread
+		currentFrame := thread.PopFrame()
+		invokerFrame := thread.TopFrame()
+		val := currentFrame.OperandStack.PopDouble()
+		invokerFrame.OperandStack.PushDouble(val)
+		return 0, nil
+	},
+	ARETURN: func(frame *rtda.Frame) (int, error) {
+		thread := frame.Thread
+		currentFrame := thread.PopFrame()
+		invokerFrame := thread.TopFrame()
+		val := currentFrame.OperandStack.Pop()
+		invokerFrame.OperandStack.Push(val)
+		return 0, nil
+	},
+	RETURN: func(frame *rtda.Frame) (int, error) {
+		thread := frame.Thread
+		thread.PopFrame()
+		return 0, nil
+	},
+	GETSTATIC: func(frame *rtda.Frame) (int, error) {
+		panic("todo: getstatic")
+	},
+	PUTSTATIC: func(frame *rtda.Frame) (int, error) {
+		panic("todo: putstatic")
+	},
+	GETFIELD: func(frame *rtda.Frame) (int, error) {
+		panic("todo: getfield")
+	},
+	PUTFIELD: func(frame *rtda.Frame) (int, error) {
+		panic("todo: putfield")
+	},
+	INVOKEVIRTUAL: func(frame *rtda.Frame) (int, error) {
+		panic("todo: invokevirtual")
+	},
+	INVOKESPECIAL: func(frame *rtda.Frame) (int, error) {
+		panic("todo: invokespecial")
+	},
+	INVOKESTATIC: func(frame *rtda.Frame) (int, error) {
+		panic("todo: invokestatic")
+	},
+	INVOKEINTERFACE: func(frame *rtda.Frame) (int, error) {
+		panic("todo: invokeinterface")
+	},
+	INVOKEDYNAMIC: func(frame *rtda.Frame) (int, error) {
+		panic("todo: invokedynamic")
+	},
+	NEW: func(frame *rtda.Frame) (int, error) {
+		panic("todo: new")
+	},
+	NEWARRAY: func(frame *rtda.Frame) (int, error) {
+		panic("todo: newarray")
+	},
+	ANEWARRAY: func(frame *rtda.Frame) (int, error) {
+		panic("todo: anewarray")
+	},
+	ARRAYLENGTH: func(frame *rtda.Frame) (int, error) {
+		panic("todo: arraylength")
+	},
+	ATHROW: func(frame *rtda.Frame) (int, error) {
+		panic("todo: athrow")
+	},
+	CHECKCAST: func(frame *rtda.Frame) (int, error) {
+		panic("todo: checkcast")
+	},
+	INSTANCEOF: func(frame *rtda.Frame) (int, error) {
+		panic("todo: instanceof")
+	},
+	MONITORENTER: func(frame *rtda.Frame) (int, error) {
+		panic("todo: monitorenter")
+	},
+	MONITOREXIT: func(frame *rtda.Frame) (int, error) {
+		panic("todo: monitorexit")
+	},
+	WIDE: func(frame *rtda.Frame) (int, error) {
+		panic("todo: wide")
+	},
+	MULTIANEWARRAY: func(frame *rtda.Frame) (int, error) {
+		panic("todo: multianewarray")
+	},
+	IFNULL: func(frame *rtda.Frame) (int, error) {
+		panic("todo: ifnull")
+	},
+	IFNONNULL: func(frame *rtda.Frame) (int, error) {
+		panic("todo: ifnonnull")
+	},
+	GOTO_W: func(frame *rtda.Frame) (int, error) {
+		panic("todo: goto_w")
+	},
+	JSR_W: func(frame *rtda.Frame) (int, error) {
+		panic("todo: jsr_w")
+	},
+}
+
+func checkIndex(i int, index int32) {
+	if i < 0 || i >= int(index) {
+		panic("ArrayIndexOutOfBoundsException")
+	}
+
 }

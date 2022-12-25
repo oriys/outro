@@ -9,34 +9,34 @@ func (c *ConstantPool) GetConstant(index uint16) interface{} {
 }
 
 type Method struct {
-	accessFlag uint16
-	name       string
-	descriptor string
-	maxStack   uint16
-	maxLocals  uint16
-	code       []byte
-	class      *Class
+	AccessFlag uint16
+	Name       string
+	Descriptor string
+	MaxStack   uint16
+	MaxLocals  uint16
+	Code       []byte
+	Class      *Class
 }
 
 type Field struct {
-	accessFlag uint16
-	name       string
-	descriptor string
-	class      *Class
+	AccessFlag uint16
+	Name       string
+	Descriptor string
+	Class      *Class
 }
 
 type Class struct {
-	accessFlag        uint16
-	name              string
-	superClassName    string
-	interfaceNames    []string
-	constantPool      *ConstantPool
-	fields            []*Field
-	methods           []*Method
-	loader            *ClassLoader
-	superClass        *Class
-	interfaces        []*Class
-	instanceSlotCount uint
-	staticSlotCount   uint
-	staticVars        []*Slot
+	AccessFlag        uint16
+	Name              string
+	SuperClassName    string
+	InterfaceNames    []string
+	ConstantPool      *ConstantPool
+	Fields            []*Field
+	Methods           []*Method
+	Loader            *ApplicationClassLoader
+	SuperClass        *Class
+	Interfaces        []*Class
+	InstanceSlotCount uint
+	StaticSlotCount   uint
+	StaticVars        []*interface{}
 }
