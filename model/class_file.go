@@ -30,7 +30,7 @@ type MethodInfo struct {
 	Attributes      []AttributeInfo
 }
 
-type Class struct {
+type ClassFile struct {
 	Magic             uint32
 	MinorVersion      uint16
 	MajorVersion      uint16
@@ -82,7 +82,7 @@ type LocalVariableTable struct {
 	Index           uint16
 }
 
-func (c *Class) GetMethod(name string, descriptor string) (*MethodInfo, error) {
+func (c *ClassFile) GetMethod(name string, descriptor string) (*MethodInfo, error) {
 	for _, method := range c.Methods {
 		if c.readConstantPoolUtf8ValueByIndex(method.NameIndex) == name && c.readConstantPoolUtf8ValueByIndex(method.DescriptorIndex) == descriptor {
 			return &method, nil
@@ -91,7 +91,7 @@ func (c *Class) GetMethod(name string, descriptor string) (*MethodInfo, error) {
 	return nil, nil
 }
 
-func (c *Class) GetField(name string, descriptor string) (*FieldInfo, error) {
+func (c *ClassFile) GetField(name string, descriptor string) (*FieldInfo, error) {
 	for _, field := range c.Fields {
 		if c.readConstantPoolUtf8ValueByIndex(field.NameIndex) == name && c.readConstantPoolUtf8ValueByIndex(field.DescriptorIndex) == descriptor {
 			return &field, nil
@@ -100,7 +100,7 @@ func (c *Class) GetField(name string, descriptor string) (*FieldInfo, error) {
 	return nil, nil
 }
 
-func (c *Class) GetCodeAttribute(method *MethodInfo) (*CodeAttributeInfo, error) {
+func (c *ClassFile) GetCodeAttribute(method *MethodInfo) (*CodeAttributeInfo, error) {
 	for _, attr := range method.Attributes {
 		if c.readConstantPoolUtf8ValueByIndex(attr.AttributeNameIndex) == "Code" {
 			return attr.ToCodeAttributeInfo()
@@ -109,11 +109,11 @@ func (c *Class) GetCodeAttribute(method *MethodInfo) (*CodeAttributeInfo, error)
 	return nil, nil
 }
 
-func (c *Class) readConstantPoolUtf8ValueByIndex(index uint16) string {
+func (c *ClassFile) readConstantPoolUtf8ValueByIndex(index uint16) string {
 	return string(c.ConstantPool[index-1].Info)
 }
 
-func (attr *AttributeInfo) ToCodeAttributeInfo() (*CodeAttributeInfo, error) {
+func (attr AttributeInfo) ToCodeAttributeInfo() (*CodeAttributeInfo, error) {
 	attributeNameIndex := binary.BigEndian.Uint16(attr.Info[0:2])
 	attributeLength := binary.BigEndian.Uint32(attr.Info[2:6])
 	maxStack := binary.BigEndian.Uint16(attr.Info[6:8])

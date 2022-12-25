@@ -23,7 +23,7 @@ func TestMethodInvoke(t *testing.T) {
 	assertClassParse(t, class)
 }
 
-func assertClassParse(t *testing.T, class *model.Class) {
+func assertClassParse(t *testing.T, class *model.ClassFile) {
 	Convey("Test Method Invoke Parse", t, func() {
 		So(class.Magic, ShouldEqual, 0xCAFEBABE)
 		So(class.MinorVersion, ShouldEqual, 0)

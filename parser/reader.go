@@ -10,7 +10,7 @@ type Class struct {
 	MinorVersion      uint16
 	MajorVersion      uint16
 	ConstantPoolCount uint16
-	ConstantPool      []ConstantInfo
+	constantPool      []ConstantInfo
 	AccessFlags       uint16
 	ThisClass         uint16
 	SuperClass        uint16

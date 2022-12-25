@@ -3,17 +3,23 @@ package interpreter
 import "outro/rtda"
 
 type JVM struct {
-	thread *rtda.Thread
+	Thread *rtda.Thread
 }
 
 func (jvm *JVM) Execute() {
-
-	jvm.thread.Execute()
-
+	frame := jvm.Thread.CurrentFrame()
+	run(frame)
 }
 
-func NewJVM(thread *rtda.Thread) *JVM {
-	return &JVM{
-		thread: thread,
+func run(frame *rtda.Frame) {
+	opcodes := frame.Method.Code
+	for {
+		println(InstructDisplayNameMap[Instruct(opcodes[frame.Thread.PC])])
+		opcode := Instruct(opcodes[frame.Thread.PC])
+		pc, err := InstructFuncMap[opcode](frame)
+		if err != nil {
+			panic(err)
+		}
+		frame.Thread.PC = pc
 	}
 }

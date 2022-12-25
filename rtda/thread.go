@@ -1,11 +1,16 @@
 package rtda
 
-import "outro/model"
-
 type Thread struct {
 	PC           int
 	stack        []*Frame
-	currentClass *model.Class
+	currentClass *Class
+	ThreadGroup  []*Thread
+}
+
+func NewThread() *Thread {
+	thread := Thread{}
+	thread.stack = make([]*Frame, 0)
+	return &thread
 }
 
 func (t *Thread) Execute() {
@@ -29,9 +34,11 @@ func (t *Thread) TopFrame() *Frame {
 	return t.stack[len(t.stack)-1]
 }
 
-func NewThread(frame *Frame, class *model.Class) *Thread {
-	return &Thread{
-		currentFrame: frame,
-		currentClass: class,
-	}
+func (t *Thread) NewFrame(method *Method) {
+	frame := Frame{}
+	frame.Method = method
+	frame.Thread = t
+	frame.localVariables = make([]interface{}, method.MaxLocals)
+	frame.operandStack = make([]interface{}, method.MaxStack)
+	t.PushFrame(&frame)
 }

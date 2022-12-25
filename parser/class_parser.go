@@ -283,8 +283,8 @@ func (p *ClassFileParser) parseMethodInfo() model.MethodInfo {
 	}
 }
 
-func (p *ClassFileParser) Parse() *model.Class {
-	class := model.Class{}
+func (p *ClassFileParser) Parse() *model.ClassFile {
+	class := model.ClassFile{}
 	class.Magic = p.parseMagic()
 	class.MinorVersion = p.parseMinorVersion()
 	class.MajorVersion = p.parseMajorVersion()

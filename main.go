@@ -1,9 +1,8 @@
 package main
 
 import (
-	"io"
-	"os"
-	"outro/parser"
+	"outro/interpreter"
+	"outro/rtda"
 )
 
 func main() {
@@ -13,15 +12,16 @@ func main() {
 	// create a new frame
 	// push the frame to the thread
 	// execute the frame
-
-	file, err := os.Open("java/classes/MethodInvoke.class")
-	defer file.Close()
+	loader := rtda.NewApplicationClassLoader()
+	class, err := loader.LoadClass("java/classes/HelloWorld.class")
 	checkErr(err)
-	bytes, err := io.ReadAll(file)
-	reader := parser.NewByteReader(bytes)
-	parser := parser.NewClassFileParser(reader)
-	class := parser.Parse()
-	mainMethod, err := class.getMethod("main", "([Ljava/lang/String;)V")
+	mainMethod, err := class.GetMainMethod()
+	checkErr(err)
+	thread := rtda.NewThread()
+	thread.NewFrame(mainMethod)
+	jvm := interpreter.JVM{}
+	jvm.Thread = thread
+	jvm.Execute()
 }
 
 func checkErr(err error) {
